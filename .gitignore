@@ -1,7 +1,11 @@
 # Spin
 pan
 pan.*
-main.pml.*
+*.trail
+*.log
+*.json
+main
+*.tmp
 
 # Prerequisites
 *.d
