@@ -49,7 +49,7 @@ void log_state(FILE* log_file, int last) {
     }
 }
 
-void add_task(int32_t id, uint32_t burst_time, uint8_t priority) {
+void add_task(int32_t id, int32_t burst_time, uint8_t priority) {
     if (task_count < MAX_TASKS) {
         task_queue[task_count].state = NEW;
         task_queue[task_count].id = id;
@@ -103,10 +103,17 @@ void run_scheduler() {
 }
 
 int main(int argc, char *argv[]) {
-    add_task(1, 300, 0);
-    add_task(2, 200, 0);
-    add_task(3, 100, 0);
-    add_task(4, 150, 0);
+    // Load random inputs
+    FILE *file = fopen("c_random_inputs.txt", "r");
+    for(int i = 0; i < MAX_TASKS; i++) {
+        int32_t id, burst_time;
+        uint8_t priority;
+
+        fscanf(file, "%d %d %hhd", &id, &burst_time, &priority);
+        add_task(id, burst_time, priority);
+    }
+
+    fclose(file);
 
     run_scheduler();
     

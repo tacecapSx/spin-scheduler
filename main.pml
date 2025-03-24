@@ -1,3 +1,5 @@
+#include "spin_random_inputs.pml"
+
 #define MAX_TASKS 4
 
 #define NEW 0
@@ -103,12 +105,17 @@ inline run_scheduler() {
   printf("]\n}");
 }
 
-// Main process
 init {
-  add_task(1, 300, 0);
-  add_task(2, 200, 0);
-  add_task(3, 100, 0);
-  add_task(4, 150, 0);
+  // Load in tasks from spin_random_inputs.pml
+  byte task = 0;
+
+  do
+  :: task < MAX_TASKS ->
+    add_task(task_ids[task], task_burst_times[task], task_priorities[task]);
+    task++;
+  :: else -> break;
+  od;
+
   run_scheduler();
 }
 
