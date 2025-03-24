@@ -5,15 +5,18 @@
 pan
 pan.*
 *.trail
-*.log
-*.json
-main
 *.tmp
+
+# Logging & Correctness
+*.json
+spin_random_inputs.pml
+c_random_inputs.txt
 
 # Prerequisites
 *.d
 
 # Object files
+main
 *.o
 *.ko
 *.obj
