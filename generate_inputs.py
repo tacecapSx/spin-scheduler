@@ -43,7 +43,7 @@ def murmurhash3_32(key):
 def main():
     tasks = []
     for i in range(MAX_TASKS):
-        key = random.randint(10000, 4000000)
+        key = random.randint(DIFFICULTY + 1, 2147483647 - (DIFFICULTY + 1))
         h = murmurhash3_32(key)
         
         task = {

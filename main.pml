@@ -99,6 +99,7 @@ inline run_scheduler() {
 
           log_state(0);
 
+          // Perform one reverse hash attempt
           task_queue[i].hash_progress++;
           
           int hash;
