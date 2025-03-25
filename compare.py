@@ -22,7 +22,10 @@ class Event:
             if (self_task["position"] != other_task["position"] or 
                 self_task["id"] != other_task["id"] or 
                 self_task["state"] != other_task["state"] or 
-                self_task["burst_time"] != other_task["burst_time"] or 
+                self_task["hash"] != other_task["hash"] or 
+                self_task["hash_progress"] != other_task["hash_progress"] or 
+                self_task["hash_start"] != other_task["hash_start"] or 
+                self_task["hash_end"] != other_task["hash_end"] or 
                 self_task["priority"] != other_task["priority"]):
                 return False
         

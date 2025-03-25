@@ -10,7 +10,10 @@
 typedef Task {
   int id;
   byte state;
-  int burst_time;
+  int hash;
+  int hash_start;
+  int hash_end;
+  int hash_progress;
   byte p
 };
 
@@ -22,8 +25,8 @@ inline log_state(last) {
   byte t = 0;
   do
   :: t < task_count ->
-    printf("    {\"position\": %d, \"id\": %d, \"state\": %d, \"burst_time\": %d, \"priority\": %d}", 
-            t, task_queue[t].id, task_queue[t].state, task_queue[t].burst_time, task_queue[t].p);
+    printf("    {\"position\": %d, \"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d}", 
+            t, task_queue[t].id, task_queue[t].state, task_queue[t].hash, task_queue[t].hash_start, task_queue[t].hash_end, task_queue[t].hash_progress, task_queue[t].p);
 
     if
     :: t < task_count - 1 ->
@@ -43,13 +46,39 @@ inline log_state(last) {
   fi;
 }
 
-inline add_task(task_id, burst, prio) {
+inline murmurhash3_32(key, k) {
+    int c1 = 3432918353; //0xcc9e2d51
+    int c2 = 461845907;  //0x1b873593
+    
+    k = key;
+
+    // Mix key
+    k = k * c1;
+    k = (k << 15) | (k >> (32 - 15)); // ROTL32
+    k = k * c2;
+    
+    k = (k << 13) | (k >> (32 - 13)); // ROTL32
+    k = k * 5 + 3864292196; //0xe6546b64
+
+    k = k ^ 4;
+
+    k = k ^ (k >> 16);
+    k = k * 2246822507; //0x85ebca6b
+    k = k ^ (k >> 13);
+    k = k * 3266489909; //0xc2b2ae35
+    k = k ^ (k >> 16);
+}
+
+inline add_task(task_id, task_hash, task_hash_start, task_hash_end, task_p) {
   if
   :: task_count < MAX_TASKS ->
     task_queue[task_count].state = NEW;
     task_queue[task_count].id = task_id;
-    task_queue[task_count].burst_time = burst;
-    task_queue[task_count].p = prio;
+    task_queue[task_count].hash = task_hash;
+    task_queue[task_count].hash_progress = task_hash_start - 1;
+    task_queue[task_count].hash_start = task_hash_start;
+    task_queue[task_count].hash_end = task_hash_end;
+    task_queue[task_count].p = task_p;
     task_count++;
   fi;
 }
@@ -69,13 +98,15 @@ inline run_scheduler() {
           task_queue[i].state = RUNNING;
 
           log_state(0);
+
+          task_queue[i].hash_progress++;
           
-          // Decrease burst time
-          task_queue[i].burst_time--;
-          
-          // Check if task completed
+          int hash;
+          murmurhash3_32(task_queue[i].hash_progress, hash);
+
+          // Completed if hash is correct
           if
-          :: task_queue[i].burst_time == 0 ->
+          :: hash == task_queue[i].hash ->
             task_queue[i].state = TERMINATED;
 
             log_state(0);
@@ -85,7 +116,10 @@ inline run_scheduler() {
             do
             :: j < task_count-1 ->
                task_queue[j].id = task_queue[j+1].id;
-               task_queue[j].burst_time = task_queue[j+1].burst_time;
+               task_queue[j].hash = task_queue[j+1].hash;
+               task_queue[j].hash_progress = task_queue[j+1].hash_progress;
+               task_queue[j].hash_start = task_queue[j+1].hash_start;
+               task_queue[j].hash_end = task_queue[j+1].hash_end;
                task_queue[j].p = task_queue[j+1].p;
                j++;
             :: else -> break;
@@ -111,7 +145,7 @@ init {
 
   do
   :: task < MAX_TASKS ->
-    add_task(task_ids[task], task_burst_times[task], task_priorities[task]);
+    add_task(task_ids[task], task_hashes[task], task_hash_starts[task], task_hash_ends[task], task_priorities[task]);
     task++;
   :: else -> break;
   od;
@@ -119,6 +153,4 @@ init {
   run_scheduler();
 }
 
-ltl p1 {[] (task_count <= MAX_TASKS)}
-ltl p2 {<> (task_count == 0)}
-ltl p3 {<> (task_queue[0].state == TERMINATED)}
+#include "ltl_statements.pml"

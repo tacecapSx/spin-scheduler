@@ -2,6 +2,8 @@
 .vscode
 
 # Spin
+spin
+ispin.tcl
 pan
 pan.*
 *.trail
