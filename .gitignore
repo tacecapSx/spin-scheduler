@@ -13,6 +13,7 @@ pan.*
 *.json
 spin_random_inputs.pml
 c_random_inputs.txt
+ltl_statements.pml
 
 # Prerequisites
 *.d

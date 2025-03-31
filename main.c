@@ -12,13 +12,6 @@
 #define BLOCKED 2
 #define TERMINATED 3
 
-#define HASH_LENGTH 16
-
-enum SchedulerStrategy {
-    ROUND_ROBIN,
-    PRIORITY
-};
-
 typedef struct {
     int32_t id;
     uint8_t state;
@@ -77,7 +70,7 @@ int32_t murmurhash3_32(int32_t key) {
     return key;
 }
 
-void add_task(uint32_t id, int32_t hash, int32_t hash_start, int32_t hash_end, uint8_t priority) {
+void add_task(int32_t id, int32_t hash, int32_t hash_start, int32_t hash_end, uint8_t priority) {
     if (task_count < MAX_TASKS) {
         task_queue[task_count].state = NEW;
         task_queue[task_count].id = id;

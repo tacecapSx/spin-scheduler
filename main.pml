@@ -17,8 +17,10 @@ typedef Task {
   byte p
 };
 
-Task task_queue[MAX_TASKS];
+Task task_queue[MAX_TASKS]
 byte task_count = 0;
+
+int execution_time = 0;
 
 inline log_state(last) {
   printf("{\n  \"task_count\": %d,\n  \"tasks\": [\n", task_count);
@@ -100,6 +102,8 @@ inline run_scheduler() {
           log_state(0);
 
           // Perform one reverse hash attempt
+          execution_time++;
+
           task_queue[i].hash_progress++;
           
           int hash;
