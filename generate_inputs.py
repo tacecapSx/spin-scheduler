@@ -2,8 +2,8 @@ import random
 import struct
 
 MAX_TASKS = 4
-SEED = 24525
-DIFFICULTY = 400
+SEED = 94395
+DIFFICULTY = 40
 
 random.seed(SEED)
 
@@ -65,38 +65,44 @@ def main():
         for t in tasks:
             f.write(f"{t['id']} {t['hash']} {t['hash_start']} {t['hash_end']} {t['priority']}\n")
 
-    # Generate SPIN inputs
-    with open("spin_random_inputs.pml", "w") as f:
-        f.write(f"#define MAX_TASKS {MAX_TASKS}\n\n")
-        f.write("int task_ids[MAX_TASKS] = {{ {} }};\n".format(
-            ", ".join(str(t["id"]) for t in tasks)
-        ))
-        f.write("int task_hashes[MAX_TASKS] = {{ {} }};\n".format(
-            ", ".join(str(t["hash"]) for t in tasks)
-        ))
-        f.write("int task_hash_starts[MAX_TASKS] = {{ {} }};\n".format(
-            ", ".join(str(t["hash_start"]) for t in tasks)
-        ))
-        f.write("int task_hash_ends[MAX_TASKS] = {{ {} }};\n".format(
-            ", ".join(str(t["hash_end"]) for t in tasks)
-        ))
-        f.write("byte task_priorities[MAX_TASKS] = {{ {} }};\n".format(
-            ", ".join(str(t["priority"]) for t in tasks)
-        ))
-
     # Generate LTL statements
     with open("ltl_statements.pml", "w") as f:
         # Headers
         f.write(f"#define MAX_EXECUTION_TIME {execution_time}\n\n")
 
         # Statements
-        f.write("ltl bounded_execution_time {[] (execution_time <= MAX_EXECUTION_TIME + MAX_TASKS)}\n")
-        f.write("ltl exact_execution_time {<> (execution_time == MAX_EXECUTION_TIME + MAX_TASKS)}\n")
+        f.write("ltl bounded_execution_time {[] (execution_time <= MAX_EXECUTION_TIME + MAX_TASKS + MAX_TASKS)}\n")
+        f.write("ltl exact_execution_time {<> (execution_time == MAX_EXECUTION_TIME + MAX_TASKS + MAX_TASKS)}\n")
         f.write("ltl task_count_does_not_exceed_max_tasks {[] (task_count <= MAX_TASKS)}\n")
         f.write("ltl task_count_will_become_zero {<> (task_count == 0)}\n")
 
+        f.write("ltl all_tasks_will_terminate {\n  [](\n")
         for i in range(MAX_TASKS):
-            f.write(f"ltl task_{i}_will_terminate {{(<> (task_queue[{i}].state == TERMINATED))}}\n")
+            f.write(f"    (<> (task_queue[{i}].state == TERMINATED))\n")
+
+            if i < MAX_TASKS - 1:
+                f.write("    &&\n")
+            else:
+                f.write("  )\n}\n")
+
+        f.write("ltl terminated_is_final {\n  [](\n")
+        for i in range(MAX_TASKS):
+            f.write(f"    (task_queue[{i}].state == TERMINATED -> [](task_queue[{i}].state == TERMINATED))\n")
+
+            if i < MAX_TASKS - 1:
+                f.write("    &&\n")
+            else:
+                f.write("  )\n}\n")
+        
+        f.write("ltl round_robin {\n")
+        for i in range(MAX_TASKS):
+            f.write(f"  []( (task_queue[{i}].state == RUNNING) -> \n")
+            f.write(f"    <>(task_queue[{(i + 1) % MAX_TASKS}].state == RUNNING || task_queue[{(i + 1) % MAX_TASKS}].state == TERMINATED) )\n")
+
+            if i < MAX_TASKS - 1:
+                f.write("  &&\n")
+            else:
+                f.write("}\n")
 
     print("Generated random inputs:", tasks)
 

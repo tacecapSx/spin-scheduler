@@ -28,8 +28,8 @@ int task_count = 0;
 void log_state(FILE* log_file, int last) {
     fprintf(log_file, "{\n  \"task_count\": %d,\n  \"tasks\": [\n", task_count);
     for (int i = 0; i < task_count; i++) {
-        fprintf(log_file, "    {\"position\": %d, \"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d}", 
-               i, task_queue[i].id, task_queue[i].state, task_queue[i].hash, task_queue[i].hash_start, task_queue[i].hash_end, task_queue[i].hash_progress, task_queue[i].p);
+        fprintf(log_file, "    {\"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d}", 
+               task_queue[i].id, task_queue[i].state, task_queue[i].hash, task_queue[i].hash_start, task_queue[i].hash_end, task_queue[i].hash_progress, task_queue[i].p);
 
         if(i < task_count - 1) {
             fprintf(log_file, ",\n");
@@ -91,8 +91,6 @@ void run_scheduler() {
     fprintf(log_file,"{\n\"events\": [\n");
     
     while (task_count > 0) {
-        log_state(log_file, 0);
-        
         for (int i = 0; i < task_count; i++) {
             task_queue[i].state = RUNNING;
 
@@ -105,7 +103,7 @@ void run_scheduler() {
                 task_queue[i].state = TERMINATED;
 
                 // Log task completion
-                log_state(log_file, 0);
+                log_state(log_file, task_count == 1);
                 
                 task_count--;
                 for (int j = i; j < task_count; j++) {
@@ -119,8 +117,6 @@ void run_scheduler() {
             }
         }
     }
-    
-    log_state(log_file, 1);
     fprintf(log_file,"]\n}");
     fclose(log_file);
     printf("All tasks completed\n");
