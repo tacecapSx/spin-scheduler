@@ -21,8 +21,6 @@ with open("spin_input_trail.pml", "w") as f:
     f.write(f"chan trail = [MAX_TASKS] of {{\nint, //id\nbyte, //state\nint, //hash\nint, //hash_start\nint, //hash_end\nint, //hash_progress\nbyte //p\n}};\n\n")
 
     f.write("proctype init_trace() {\n")
-
-    event_count = 0
     
     for i in range(len(trace)):
         t = trace[i]
