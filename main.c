@@ -94,12 +94,14 @@ void run_scheduler() {
             task.state = TERMINATED;
 
             // Log task completion
-            log_task(log_file, task, task_count == 1);
+            log_task(log_file, task, 0);
             
             task_count--;
         }
         else {
             task.state = BLOCKED;
+
+            log_task(log_file, task, task_count == 1);
 
             // lock the heap and reinsert the task
             pthread_mutex_lock(&heap_mutex);
