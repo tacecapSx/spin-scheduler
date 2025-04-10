@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <pthread.h>
-#include <stdint.h>
-#include <string.h>
 
 #include "types.h"
 #include "heap.h"
@@ -33,9 +30,9 @@ void log_task(FILE* log_file, Task task, int last) {
     }
 }
 
-int32_t murmurhash3_32(int32_t key) {
-    const int32_t c1 = 0xcc9e2d51;
-    const int32_t c2 = 0x1b873593;
+int murmurhash3_32(int key) {
+    const int c1 = 0xcc9e2d51;
+    const int c2 = 0x1b873593;
     
     // Mix key
     key *= c1;
@@ -56,7 +53,7 @@ int32_t murmurhash3_32(int32_t key) {
     return key;
 }
 
-void add_task(int32_t id, int32_t hash, int32_t hash_start, int32_t hash_end, uint8_t priority) {
+void add_task(int id, int hash, int hash_start, int hash_end, char priority) {
     if (task_count < MAX_TASKS) {
         Task task;
         
@@ -123,9 +120,8 @@ int main(int argc, char *argv[]) {
     // Load random inputs
     FILE *file = fopen("c_random_inputs.txt", "r");
     for(int i = 0; i < MAX_TASKS; i++) {
-        int32_t id, hash_start, hash_end;
-        uint32_t hash;
-        uint8_t priority;
+        int id, hash, hash_start, hash_end;
+        char priority;
 
         if(fscanf(file, "%d %u %d %d %hhd", &id, &hash, &hash_start, &hash_end, &priority))
             add_task(id, hash, hash_start, hash_end, priority);
