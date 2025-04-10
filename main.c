@@ -130,8 +130,8 @@ int main(int argc, char *argv[]) {
         uint32_t hash;
         uint8_t priority;
 
-        fscanf(file, "%d %u %d %d %hhd", &id, &hash, &hash_start, &hash_end, &priority);
-        add_task(id, hash, hash_start, hash_end, priority);
+        if(fscanf(file, "%d %u %d %d %hhd", &id, &hash, &hash_start, &hash_end, &priority))
+            add_task(id, hash, hash_start, hash_end, priority);
     }
 
     fclose(file);
