@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "types.h"
+#include "heap.h"
+
 #define MAX_TASKS 4
 
 #define NEW 0
@@ -12,38 +15,21 @@
 #define BLOCKED 2
 #define TERMINATED 3
 
-typedef struct {
-    int32_t id;
-    uint8_t state;
-    int32_t hash;
-    int32_t hash_start;
-    int32_t hash_end;
-    int32_t hash_progress;
-    uint8_t p;
-} Task;
+// global heap and mutex / cond
+Heap task_heap;
+pthread_mutex_t heap_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-Task task_queue[MAX_TASKS];
 int task_count = 0;
 
-void log_state(FILE* log_file, int last) {
-    fprintf(log_file, "{\n  \"task_count\": %d,\n  \"tasks\": [\n", task_count);
-    for (int i = 0; i < task_count; i++) {
-        fprintf(log_file, "    {\"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d}", 
-               task_queue[i].id, task_queue[i].state, task_queue[i].hash, task_queue[i].hash_start, task_queue[i].hash_end, task_queue[i].hash_progress, task_queue[i].p);
+void log_task(FILE* log_file, Task task, int last) {
+    fprintf(log_file, "    {\"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d}", 
+            task.id, task.state, task.hash, task.hash_start, task.hash_end, task.hash_progress, task.p);
 
-        if(i < task_count - 1) {
-            fprintf(log_file, ",\n");
-        }
-        else {
-            fprintf(log_file, "\n");
-        }
-    }
-    
-    if(last) {
-        fprintf(log_file, "  ]\n}\n");
+    if(!last) {
+        fprintf(log_file, ",\n");
     }
     else {
-        fprintf(log_file, "  ]\n},\n");
+        fprintf(log_file, "\n");
     }
 }
 
@@ -72,13 +58,20 @@ int32_t murmurhash3_32(int32_t key) {
 
 void add_task(int32_t id, int32_t hash, int32_t hash_start, int32_t hash_end, uint8_t priority) {
     if (task_count < MAX_TASKS) {
-        task_queue[task_count].state = NEW;
-        task_queue[task_count].id = id;
-        task_queue[task_count].hash = hash;
-        task_queue[task_count].hash_progress = hash_start - 1;
-        task_queue[task_count].hash_start = hash_start;
-        task_queue[task_count].hash_end = hash_end;
-        task_queue[task_count].p = priority;
+        Task task;
+        
+        task.state = NEW;
+        task.id = id;
+        task.hash = hash;
+        task.hash_progress = hash_start - 1;
+        task.hash_start = hash_start;
+        task.hash_end = hash_end;
+        task.p = priority;
+
+        // lock the heap and insert the task
+        pthread_mutex_lock(&heap_mutex);
+        heap_insert(&task_heap, task);
+        pthread_mutex_unlock(&heap_mutex);
         
         task_count++;
     } else {
@@ -91,38 +84,42 @@ void run_scheduler() {
     fprintf(log_file,"{\n\"events\": [\n");
     
     while (task_count > 0) {
-        for (int i = 0; i < task_count; i++) {
-            task_queue[i].state = RUNNING;
+        Task task = heap_get_max(&task_heap);
 
-            // Log task selection
-            log_state(log_file, 0);
+        task.state = RUNNING;
 
-            task_queue[i].hash_progress++;
+        // Log task selection
+        log_task(log_file, task, 0);
+
+        task.hash_progress++;
+        
+        if (murmurhash3_32(task.hash_progress) == task.hash) { // Hash matches
+            task.state = TERMINATED;
+
+            // Log task completion
+            log_task(log_file, task, task_count == 1);
             
-            if (murmurhash3_32(task_queue[i].hash_progress) == task_queue[i].hash) { // Hash matches
-                task_queue[i].state = TERMINATED;
+            task_count--;
+        }
+        else {
+            task.state = BLOCKED;
 
-                // Log task completion
-                log_state(log_file, task_count == 1);
-                
-                task_count--;
-                for (int j = i; j < task_count; j++) {
-                    task_queue[j] = task_queue[j + 1];
-                }
-
-                i--;
-            }
-            else {
-                task_queue[i].state = BLOCKED;
-            }
+            // lock the heap and reinsert the task
+            pthread_mutex_lock(&heap_mutex);
+            heap_insert(&task_heap, task);
+            pthread_mutex_unlock(&heap_mutex);
         }
     }
+
     fprintf(log_file,"]\n}");
     fclose(log_file);
     printf("All tasks completed\n");
 }
 
 int main(int argc, char *argv[]) {
+    // Initialize heap
+    heap_init(&task_heap, HEAP_CAPACITY);
+    
     // Load random inputs
     FILE *file = fopen("c_random_inputs.txt", "r");
     for(int i = 0; i < MAX_TASKS; i++) {
@@ -130,8 +127,8 @@ int main(int argc, char *argv[]) {
         uint32_t hash;
         uint8_t priority;
 
-        fscanf(file, "%d %u %d %d %hhd", &id, &hash, &hash_start, &hash_end, &priority);
-        add_task(id, hash, hash_start, hash_end, priority);
+        if(fscanf(file, "%d %u %d %d %hhd", &id, &hash, &hash_start, &hash_end, &priority))
+            add_task(id, hash, hash_start, hash_end, priority);
     }
 
     fclose(file);
