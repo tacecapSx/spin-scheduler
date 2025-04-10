@@ -3,9 +3,9 @@ import struct
 
 MAX_TASKS = 4
 SEED = 94395
-DIFFICULTY = 40
+DIFFICULTY = 80
 
-random.seed(SEED)
+random.seed()
 
 def int32_t(value):
     value &= 0xFFFFFFFF
@@ -73,8 +73,7 @@ def main():
         # Statements
         f.write("ltl bounded_execution_time {[] (execution_time <= MAX_EXECUTION_TIME + MAX_TASKS + MAX_TASKS)}\n")
         f.write("ltl exact_execution_time {<> (execution_time == MAX_EXECUTION_TIME + MAX_TASKS + MAX_TASKS)}\n")
-        f.write("ltl task_count_does_not_exceed_max_tasks {[] (task_count <= MAX_TASKS)}\n")
-        f.write("ltl task_count_will_become_zero {<> (task_count == 0)}\n")
+        f.write("ltl task_count_will_become_zero_and_be_bounded {\n  [] (task_count <= MAX_TASKS)\n  &&\n  [] <> (task_count == 0)\n}\n")
 
         f.write("ltl all_tasks_will_terminate {\n  [](\n")
         for i in range(MAX_TASKS):
@@ -94,15 +93,44 @@ def main():
             else:
                 f.write("  )\n}\n")
         
-        f.write("ltl round_robin {\n")
+        f.write("ltl dynamic_round_robin {\n")
         for i in range(MAX_TASKS):
-            f.write(f"  []( (task_queue[{i}].state == RUNNING) -> \n")
-            f.write(f"    <>(task_queue[{(i + 1) % MAX_TASKS}].state == RUNNING || task_queue[{(i + 1) % MAX_TASKS}].state == TERMINATED) )\n")
+            f.write(f"  []( (task_queue[{i}].state == RUNNING) -> (\n")
 
-            if i < MAX_TASKS - 1:
-                f.write("  &&\n")
-            else:
-                f.write("}\n")
+            conditions = []
+
+            for offset in range(1, MAX_TASKS):
+                j = (i + offset) % MAX_TASKS
+
+                # Get all tasks between i and j that must be TERMINATED
+                terminated_indices = [(i + k) % MAX_TASKS for k in range(1, offset)]
+
+                # Build the condition to ensure intermediate tasks are TERMINATED
+                termination_check = " && ".join(
+                    f"(task_queue[{idx}].state == TERMINATED)" for idx in terminated_indices
+                )
+                implication_prefix = f"({termination_check}) -> " if termination_check else ""
+
+                # Build the forbidden clause: all other tasks (excluding i, j, and terminated) must not be RUNNING
+                forbidden_clause = "<>" if len(terminated_indices) == MAX_TASKS - 2 else " && ".join(
+                    f"(task_queue[{k}].state != RUNNING)"
+                    for k in range(MAX_TASKS)
+                    if k not in {i, j, *terminated_indices}
+                ) + " U"
+                    
+                # Add the final condition
+                condition = f"( {implication_prefix}( {forbidden_clause} (task_queue[{j}].state == RUNNING) ) )"
+                conditions.append(condition)
+
+            # Join all conditions with ||
+            f.write("    " + "\n    ||\n    ".join(conditions) + "\n")
+            f.write("  ))")
+
+            # Full formula
+            f.write(" &&\n" if i < MAX_TASKS - 1 else "\n}\n")
+
+
+
 
     print("Generated random inputs:", tasks)
 
