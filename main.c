@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdint.h>
 
 #include "types.h"
 #include "heap.h"
@@ -53,7 +54,7 @@ int murmurhash3_32(int key) {
     return key;
 }
 
-void add_task(int id, int hash, int hash_start, int hash_end, char priority) {
+void add_task(int id, int hash, int hash_start, int hash_end, uint8_t priority) {
     if (task_count < MAX_TASKS) {
         Task task;
         
@@ -123,7 +124,7 @@ int main(int argc, char *argv[]) {
     FILE *file = fopen("c_random_inputs.txt", "r");
     for(int i = 0; i < MAX_TASKS; i++) {
         int id, hash, hash_start, hash_end;
-        char priority;
+        uint8_t priority;
 
         if(fscanf(file, "%d %u %d %d %hhd", &id, &hash, &hash_start, &hash_end, &priority))
             add_task(id, hash, hash_start, hash_end, priority);

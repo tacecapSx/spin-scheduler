@@ -50,13 +50,9 @@ inline trail_feeder() {
   int i = 0;
 
   do
-  :: i < task_count ->
+  :: i < 2 -> // Load in two task-states (which corresponds to 1 unit of execution time)
       d_step {
-        //int lol = 0;
-
         c_code {
-          //now.lol = 3;
-          
           now.id = trail_data[now.trail_index].id;
           now.state = trail_data[now.trail_index].state;
           now.hash = trail_data[now.trail_index].hash;
@@ -67,7 +63,7 @@ inline trail_feeder() {
         }
 
         trail_index++;
-        printf("%d\n", trail_index);
+        
         trail!id, state, hash, hash_start, hash_end, hash_progress, p;
 
         i++;
