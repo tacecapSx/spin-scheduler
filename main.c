@@ -21,25 +21,15 @@ typedef struct {
 Task task_queue[MAX_TASKS];
 int task_count = 0;
 
-void log_state(FILE* log_file, int last) {
-    fprintf(log_file, "{\n  \"task_count\": %d,\n  \"tasks\": [\n", task_count);
-    for (int i = 0; i < task_count; i++) {
-        fprintf(log_file, "    {\"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d}", 
-               task_queue[i].id, task_queue[i].state, task_queue[i].hash, task_queue[i].hash_start, task_queue[i].hash_end, task_queue[i].hash_progress, task_queue[i].p);
+void log_task(FILE* log_file, Task task, int last) {
+    fprintf(log_file, "    {\"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d}", 
+            task.id, task.state, task.hash, task.hash_start, task.hash_end, task.hash_progress, task.p);
 
-        if(i < task_count - 1) {
-            fprintf(log_file, ",\n");
-        }
-        else {
-            fprintf(log_file, "\n");
-        }
-    }
-    
-    if(last) {
-        fprintf(log_file, "  ]\n}\n");
+    if(!last) {
+        fprintf(log_file, ",\n");
     }
     else {
-        fprintf(log_file, "  ]\n},\n");
+        fprintf(log_file, "\n");
     }
 }
 
@@ -91,7 +81,7 @@ void run_scheduler() {
             task_queue[i].state = RUNNING;
 
             // Log task selection
-            log_state(log_file, 0);
+            log_task(log_file, task_queue[i], 0);
 
             task_queue[i].hash_progress++;
             
@@ -99,7 +89,7 @@ void run_scheduler() {
                 task_queue[i].state = TERMINATED;
 
                 // Log task completion
-                log_state(log_file, task_count == 1);
+                log_task(log_file, task_queue[i], task_count == 1);
                 
                 task_count--;
                 for (int j = i; j < task_count; j++) {
@@ -110,6 +100,8 @@ void run_scheduler() {
             }
             else {
                 task_queue[i].state = BLOCKED;
+
+                log_task(log_file, task_queue[i], 0);
             }
         }
     }
