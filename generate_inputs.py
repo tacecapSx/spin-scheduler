@@ -110,6 +110,10 @@ def main():
                 f.write("    &&\n")
             else:
                 f.write("  )\n}\n")
+
+        f.write("ltl single_threaded {\n")
+        f.write(f"  [] (\n    ({' && '.join([f'task_data[{i}].state != RUNNING' for i in range(MAX_TASKS)])})\n")
+        f.write(f"    ||\n    ({' ^ '.join([f'task_data[{i}].state == RUNNING' for i in range(MAX_TASKS)])})\n  )\n}}\n")
         
         f.write("ltl round_robin {\n")
         for i in range(MAX_TASKS):
