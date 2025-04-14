@@ -90,7 +90,9 @@ def main():
         f.write(f"#define MAX_EXECUTION_TIME {execution_time}\n\n")
 
         # Statements
+
         f.write("ltl bounded_and_exact_execution_time {\n  [] (execution_time <= MAX_EXECUTION_TIME + MAX_TASKS) // + MAX_TASKS because we log the completion as well \n  &&\n  [] <> (execution_time == MAX_EXECUTION_TIME + MAX_TASKS)\n}\n")
+
         f.write("ltl task_count_will_become_zero_and_be_bounded {\n  [] (task_count <= MAX_TASKS)\n  &&\n  [] <> (task_count == 0)\n}\n")
 
         f.write("ltl all_tasks_will_terminate {\n")
