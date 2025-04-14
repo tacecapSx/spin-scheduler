@@ -18,7 +18,7 @@ with open("spin_input_trail.pml", "w") as f:
 
     f.write('int trail_index = 0;\n\n')
     
-    f.write(f"chan trail = [2] of {{\nint, //queue_position\nint, //id\nbyte, //state\nint, //hash\nint, //hash_start\nint, //hash_end\nint, //hash_progress\nbyte //p\n}};\n\n")
+    f.write(f"chan trail = [2] of {{\nint, //id\nbyte, //state\nint, //hash\nint, //hash_start\nint, //hash_end\nint, //hash_progress\nbyte //p\n}};\n\n")
 
     f.write("chan go_signal = [1] of {bool};\n\n")
 
@@ -28,7 +28,6 @@ with open("spin_input_trail.pml", "w") as f:
         t = trace[i]
         
         f.write("  c_code {\n")
-        f.write(f"    trail_data[{i}].queue_position = {t['queue_position']};\n")
         f.write(f"    trail_data[{i}].id = {t['id']};\n")
         f.write(f"    trail_data[{i}].state = {t['state']};\n")
         f.write(f"    trail_data[{i}].hash = {t['hash']};\n")

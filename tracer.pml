@@ -18,10 +18,9 @@ typedef Task {
 };
 
 Task task_data[MAX_TASKS];
-Task task_queue[MAX_TASKS];
 byte task_count = MAX_TASKS;
 
-int queue_position, id, hash, hash_start, hash_end, hash_progress;
+int id, hash, hash_start, hash_end, hash_progress;
 byte state, p;
 
 int execution_time = 0;
@@ -30,18 +29,10 @@ inline run_scheduler() {
   do
   :: nempty(trail) ->
     
-    trail?queue_position, id, state, hash, hash_start, hash_end, hash_progress, p;
+    trail?id, state, hash, hash_start, hash_end, hash_progress, p;
 
     d_step {
       task_data[id].state = state;
-
-      task_queue[queue_position].id = id;
-      task_queue[queue_position].state = state;
-      task_queue[queue_position].hash = hash;
-      task_queue[queue_position].hash_progress = hash_progress;
-      task_queue[queue_position].hash_start = hash_start;
-      task_queue[queue_position].hash_end = hash_end;
-      task_queue[queue_position].p = p;
 
       if
       :: state == TERMINATED -> 
@@ -64,7 +55,6 @@ inline trail_feeder() {
   :: i < 2 -> // Load in two task-states (which corresponds to 1 unit of execution time)
       d_step {
         c_code {
-          now.queue_position = trail_data[now.trail_index].queue_position;
           now.id = trail_data[now.trail_index].id;
           now.state = trail_data[now.trail_index].state;
           now.hash = trail_data[now.trail_index].hash;
@@ -76,7 +66,7 @@ inline trail_feeder() {
 
         trail_index++;
         
-        trail!queue_position, id, state, hash, hash_start, hash_end, hash_progress, p;
+        trail!id, state, hash, hash_start, hash_end, hash_progress, p;
 
         i++;
       }
