@@ -1,7 +1,20 @@
 #!/bin/bash
 
-# Define the path to your files
-main_pml="main.pml"
+# Get the filename from the first argument
+filename="$1"
+
+# Check if the filename was actually provided
+if [ -z "$filename" ]; then
+  echo "Usage: $0 <filename>"
+  exit 1
+fi
+
+# Check if the file exists AND is a regular file
+if [[ ! -f "$filename" ]]; then
+  echo "File '$filename' does not exist"
+  exit 1
+fi
+
 ltl_statements_file="ltl_statements.pml"
 
 # Check if the LTL statements file exists
@@ -24,10 +37,10 @@ for ltl_name in $ltl_names; do
   echo "Verifying LTL statement: $ltl_name"
   
   # Run the spin verification command and capture the output
-  output=$(spin -search -ltl "$ltl_name" -m100000 "$main_pml" 2>&1)
+  output=$(spin -search -ltl "$ltl_name" -m100000 "$filename" 2>&1)
   
   # Check if the output contains the phrase indicating failure
-  if echo "$output" | grep -q "assertion violated"; then
+  if echo "$output" | grep -q "pan:1"; then
     # If an assertion is violated, print the failure message
     echo "FAILURE: LTL statement $ltl_name failed."
     echo "$output" | grep "pan:"

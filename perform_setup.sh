@@ -7,7 +7,3 @@ make
 ./main
 
 python3 make_spin_trail.py
-
-spin -a main.pml
-
-gcc pan.c -o pan

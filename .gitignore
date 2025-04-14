@@ -13,6 +13,7 @@ pan.*
 *.json
 spin_input_trail.pml
 c_random_inputs.txt
+spin_random_inputs.pml
 ltl_statements.pml
 
 # Prerequisites
