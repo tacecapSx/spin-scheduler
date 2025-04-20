@@ -33,21 +33,11 @@ inline int heap_is_empty(Heap *heap) {
     return heap->size == 0;
 }
 
-// resize the heap dynamically
-static void heap_resize(Heap *heap, int new_capacity) {
-    Task *new_data = realloc(heap->data, new_capacity * sizeof(Task));
-    if (!new_data) {
-        perror("Heap resizing failed");
-        exit(EXIT_FAILURE);
-    }
-    heap->data = new_data;
-    heap->capacity = new_capacity;
-}
-
 // Insert an element into the heap
 void heap_insert(Heap *heap, Task task) {
     if (heap->size == heap->capacity) {
-        heap_resize(heap, heap->capacity * 2);  // double the capacity when full
+        printf("ERROR: Attempted to insert into heap at max capacity.\n");
+        exit(EXIT_FAILURE);
     }
     heap->data[heap->size] = task;
     bubble_up(heap, heap->size);
@@ -57,7 +47,7 @@ void heap_insert(Heap *heap, Task task) {
 // get the maximum priority element
 Task heap_get_max(Heap *heap) {
     if (heap_is_empty(heap)) {
-        fprintf(stderr, "Heap underflow: no elements to extract\n");
+        fprintf(stderr, "ERROR: Heap is empty; no elements to extract.\n");
         exit(EXIT_FAILURE);
     }
     Task max = heap->data[0];

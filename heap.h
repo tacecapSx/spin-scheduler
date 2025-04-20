@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include "types.h"
 
-#define HEAP_CAPACITY 4  // Default initial capacity of heap
-
 typedef struct {
     Task *data;
     int size;

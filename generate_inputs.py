@@ -3,9 +3,10 @@ import struct
 
 MAX_TASKS = 4
 SEED = 90024
-DIFFICULTY = 100
+DIFFICULTY = 6
+EXECUTION_TIME_MAX = 12
 
-random.seed(SEED)
+random.seed()
 
 def int32_t(value):
     value &= 0xFFFFFFFF
@@ -40,10 +41,10 @@ def murmurhash3_32(key):
     
     return int32_t(key)
 
-def main():
-    execution_time = 0
-
+def create_tasks():
+    execution_time = 0;
     tasks = []
+
     for i in range(MAX_TASKS):
         key = random.randint(DIFFICULTY + 1, 2147483647 - (DIFFICULTY + 1))
         h = murmurhash3_32(key)
@@ -59,6 +60,12 @@ def main():
             "priority": random.randint(0, 255)
         }
         tasks.append(task)
+    
+    # Return tasks and execution time if EXECUTION_TIME_MAX is followed, else try again
+    return (tasks, execution_time) if execution_time <= EXECUTION_TIME_MAX else create_tasks()
+
+def main():
+    tasks, execution_time = create_tasks()
 
     # Generate C inputs
     with open("c_random_inputs.txt", "w") as f:
@@ -93,7 +100,7 @@ def main():
 
         f.write("ltl bounded_and_exact_execution_time {\n  [] (execution_time <= MAX_EXECUTION_TIME + MAX_TASKS) // + MAX_TASKS because we log the completion as well \n  &&\n  [] <> (execution_time == MAX_EXECUTION_TIME + MAX_TASKS)\n}\n")
 
-        f.write("ltl task_count_will_become_zero_and_be_bounded {\n  [] (task_count <= MAX_TASKS)\n  &&\n  [] <> (task_count == 0)\n}\n")
+        f.write("ltl task_count_will_become_zero_and_be_bounded {\n  [] (heap.size <= MAX_TASKS)\n  &&\n  [] <> (heap.size == 0)\n}\n")
 
         f.write("ltl all_tasks_will_terminate {\n")
         for i in range(MAX_TASKS):

@@ -2,33 +2,38 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #include "types.h"
 #include "heap.h"
 
 #define MAX_TASKS 4
 
+#define THREAD_COUNT 2
+
 #define NEW 0
 #define RUNNING 1
 #define BLOCKED 2
 #define TERMINATED 3
 
-// global heap and mutex / cond
+// Global heap
 Heap task_heap;
+
+// Global mutexes
 pthread_mutex_t heap_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t log_file_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int task_count = 0;
+// Log file
+FILE *log_file;
 
-void log_task(FILE* log_file, Task task, int last) {
-    fprintf(log_file, "    {\"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d}", 
+void log_task(FILE* log_file, Task task) {
+    pthread_mutex_lock(&log_file_mutex);
+    fprintf(log_file, "    {\"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d},\n", 
             task.id, task.state, task.hash, task.hash_start, task.hash_end, task.hash_progress, task.p);
 
-    if(!last) {
-        fprintf(log_file, ",\n");
-    }
-    else {
-        fprintf(log_file, "\n");
-    }
+    fflush(log_file);
+
+    pthread_mutex_unlock(&log_file_mutex);
 }
 
 int murmurhash3_32(int key) {
@@ -55,70 +60,82 @@ int murmurhash3_32(int key) {
 }
 
 void add_task(int id, int hash, int hash_start, int hash_end, uint8_t priority) {
-    if (task_count < MAX_TASKS) {
-        Task task;
-        
-        task.state = NEW;
-        task.id = id;
-        task.hash = hash;
-        task.hash_progress = hash_start - 1;
-        task.hash_start = hash_start;
-        task.hash_end = hash_end;
-        task.p = priority;
+    Task task;
+    
+    task.state = NEW;
+    task.id = id;
+    task.hash = hash;
+    task.hash_progress = hash_start - 1;
+    task.hash_start = hash_start;
+    task.hash_end = hash_end;
+    task.p = priority;
 
-        // lock the heap and insert the task
-        pthread_mutex_lock(&heap_mutex);
-        heap_insert(&task_heap, task);
-        pthread_mutex_unlock(&heap_mutex);
-        
-        task_count++;
-    } else {
-        printf("Task queue full\n");
-    }
+    // lock the heap and insert the task
+    pthread_mutex_lock(&heap_mutex);
+    heap_insert(&task_heap, task);
+    pthread_mutex_unlock(&heap_mutex);
 }
 
-void run_scheduler() {
-    FILE* log_file = fopen("c_trace.json", "w");
-    fprintf(log_file,"{\n\"events\": [\n");
-    
-    while (task_count > 0) {
+void* task_runner(void* arg) {
+    while (1) {
+        pthread_mutex_lock(&heap_mutex);
+        
+        // If heap is empty, unlock and terminate
+        if (heap_is_empty(&task_heap)) {
+            pthread_mutex_unlock(&heap_mutex);
+            break;
+        }
+
         Task task = heap_get_max(&task_heap);
+        pthread_mutex_unlock(&heap_mutex);
 
         task.state = RUNNING;
-
-        // Log task selection
-        log_task(log_file, task, 0);
+        log_task(log_file, task);
 
         task.hash_progress++;
-        
-        if (murmurhash3_32(task.hash_progress) == task.hash) { // Hash matches
+
+        usleep(1000); // Sleep for a bit to stimulate interleaving (in this time, other threads can start work)
+
+        if (murmurhash3_32(task.hash_progress) == task.hash) {
             task.state = TERMINATED;
-
-            // Log task completion
-            log_task(log_file, task, task_count == 1);
-            
-            task_count--;
-        }
-        else {
+            log_task(log_file, task);
+        } else {
             task.state = BLOCKED;
+            log_task(log_file, task);
 
-            log_task(log_file, task, 0);
-
-            // lock the heap and reinsert the task
+            // Reinsert the task safely
             pthread_mutex_lock(&heap_mutex);
             heap_insert(&task_heap, task);
             pthread_mutex_unlock(&heap_mutex);
         }
     }
 
-    fprintf(log_file,"]\n}");
+    return NULL;
+}
+
+void run_scheduler() {
+    log_file = fopen("c_trace.json", "w");
+    fprintf(log_file,"{\n\"events\": [\n");
+    
+    pthread_t threads[THREAD_COUNT];
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        pthread_create(&threads[i], NULL, task_runner, NULL);
+    }
+
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    fseek(log_file, -2, SEEK_CUR); // Overwrite the trailing comma
+    fprintf(log_file,"\n]\n}");
     fclose(log_file);
     printf("All tasks completed\n");
 }
 
 int main(int argc, char *argv[]) {
     // Initialize heap
-    heap_init(&task_heap, HEAP_CAPACITY);
+    heap_init(&task_heap, MAX_TASKS);
     
     // Load random inputs
     FILE *file = fopen("c_random_inputs.txt", "r");
