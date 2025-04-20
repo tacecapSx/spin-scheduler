@@ -24,6 +24,7 @@ byte task_count = 0;
 int execution_time = 0;
 
 inline murmurhash3_32(key, k) {
+  d_step {
     int c1 = 3432918353; //0xcc9e2d51
     int c2 = 461845907;  //0x1b873593
     
@@ -44,84 +45,98 @@ inline murmurhash3_32(key, k) {
     k = k ^ (k >> 13);
     k = k * 3266489909; //0xc2b2ae35
     k = k ^ (k >> 16);
+  }
 }
 
 inline add_task(task_id, task_hash, task_hash_start, task_hash_end, task_p) {
   if
   :: task_count < MAX_TASKS ->
-    task_data[task_count].state = NEW;
-    task_data[task_count].id = task_id;
-    task_data[task_count].hash = task_hash;
-    task_data[task_count].hash_progress = task_hash_start - 1;
-    task_data[task_count].hash_start = task_hash_start;
-    task_data[task_count].hash_end = task_hash_end;
-    task_data[task_count].p = task_p;
+    d_step {
+      task_data[task_count].state = NEW;
+      task_data[task_count].id = task_id;
+      task_data[task_count].hash = task_hash;
+      task_data[task_count].hash_progress = task_hash_start - 1;
+      task_data[task_count].hash_start = task_hash_start;
+      task_data[task_count].hash_end = task_hash_end;
+      task_data[task_count].p = task_p;
 
-    task_queue[task_count].state = NEW;
-    task_queue[task_count].id = task_id;
-    task_queue[task_count].hash = task_hash;
-    task_queue[task_count].hash_progress = task_hash_start - 1;
-    task_queue[task_count].hash_start = task_hash_start;
-    task_queue[task_count].hash_end = task_hash_end;
-    task_queue[task_count].p = task_p;
-    task_count++;
+      task_queue[task_count].state = NEW;
+      task_queue[task_count].id = task_id;
+      task_queue[task_count].hash = task_hash;
+      task_queue[task_count].hash_progress = task_hash_start - 1;
+      task_queue[task_count].hash_start = task_hash_start;
+      task_queue[task_count].hash_end = task_hash_end;
+      task_queue[task_count].p = task_p;
+      
+      task_count++;
+    }
   fi;
 }
 
 inline run_scheduler() {
+  int hash;
+  
   do
   :: task_count > 0 ->
-     d_step {
-       // Process each task in round-robin fashion
-       byte i = 0;
-       do
-       :: i < task_count ->
-          task_data[task_queue[i].id].state = RUNNING;
-          task_queue[i].state = RUNNING;
+    // Process each task in round-robin fashion
+    byte i = 0;
+    do
+    :: i < task_count ->
+      d_step {
+        task_data[task_queue[i].id].state = RUNNING;
+        task_queue[i].state = RUNNING;
 
-          // Perform one reverse hash attempt
-          execution_time++;
 
-          task_queue[i].hash_progress++;
+        execution_time++;
+
+        task_queue[i].hash_progress++;
+      }
+
+      // Perform one reverse hash attempt
+      murmurhash3_32(task_queue[i].hash_progress, hash);
+
+      // Completed if hash is correct
+      if
+      :: hash == task_queue[i].hash ->
+        atomic {
+          task_data[task_queue[i].id].state = TERMINATED;
+          task_queue[i].state = TERMINATED;
           
-          int hash;
-          murmurhash3_32(task_queue[i].hash_progress, hash);
+          // Remove task
+          byte j = i;
+          do
+          :: j < task_count-1 ->
+              d_step {
+                task_queue[j].id = task_queue[j+1].id;
+                task_queue[j].hash = task_queue[j+1].hash;
+                task_queue[j].hash_progress = task_queue[j+1].hash_progress;
+                task_queue[j].hash_start = task_queue[j+1].hash_start;
+                task_queue[j].hash_end = task_queue[j+1].hash_end;
+                task_queue[j].p = task_queue[j+1].p;
 
-          // Completed if hash is correct
-          if
-          :: hash == task_queue[i].hash ->
-            task_data[task_queue[i].id].state = TERMINATED;
-            task_queue[i].state = TERMINATED;
-            
-            // Remove task
-            byte j = i;
-            do
-            :: j < task_count-1 ->
-               task_queue[j].id = task_queue[j+1].id;
-               task_queue[j].hash = task_queue[j+1].hash;
-               task_queue[j].hash_progress = task_queue[j+1].hash_progress;
-               task_queue[j].hash_start = task_queue[j+1].hash_start;
-               task_queue[j].hash_end = task_queue[j+1].hash_end;
-               task_queue[j].p = task_queue[j+1].p;
-               j++;
-            :: else -> break;
-            od;
-            task_count--;
-          :: else ->
-            task_data[task_queue[i].id].state = BLOCKED;
-            task_queue[i].state = BLOCKED;
-            i++;
-          fi;
-       :: else -> break;
-       od;
-     }
+                j++;
+              }
+          :: else -> break;
+          od;
+
+          task_count--;
+        }
+      :: else ->
+        d_step {
+          task_data[task_queue[i].id].state = BLOCKED;
+          task_queue[i].state = BLOCKED;
+          i++;
+        }
+      fi;
+    :: else -> break;
+    od;
   :: else -> break;
   od;
 }
 
 init {
   // Load in tasks from spin_random_inputs.pml
-  d_step {
+  atomic {
     byte task = 0;
 
     do

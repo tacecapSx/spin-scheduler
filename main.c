@@ -22,16 +22,9 @@ typedef struct {
 Task task_queue[MAX_TASKS];
 int task_count = 0;
 
-void log_task(FILE* log_file, int queue_position, Task task, int last) {
-    fprintf(log_file, "    {\"queue_position\": %d, \"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d}", 
+inline void log_task(FILE* log_file, int queue_position, Task task) {
+    fprintf(log_file, "    {\"queue_position\": %d, \"id\": %d, \"state\": %d, \"hash\": %d, \"hash_start\": %d, \"hash_end\": %d, \"hash_progress\": %d, \"priority\": %d},\n", 
             queue_position, task.id, task.state, task.hash, task.hash_start, task.hash_end, task.hash_progress, task.p);
-
-    if(!last) {
-        fprintf(log_file, ",\n");
-    }
-    else {
-        fprintf(log_file, "\n");
-    }
 }
 
 int murmurhash3_32(int key) {
@@ -82,7 +75,7 @@ void run_scheduler() {
             task_queue[i].state = RUNNING;
 
             // Log task selection
-            log_task(log_file, i, task_queue[i], 0);
+            log_task(log_file, i, task_queue[i]);
 
             task_queue[i].hash_progress++;
             
@@ -90,7 +83,7 @@ void run_scheduler() {
                 task_queue[i].state = TERMINATED;
 
                 // Log task completion
-                log_task(log_file, i, task_queue[i], task_count == 1);
+                log_task(log_file, i, task_queue[i]);
                 
                 task_count--;
                 for (int j = i; j < task_count; j++) {
@@ -102,11 +95,13 @@ void run_scheduler() {
             else {
                 task_queue[i].state = BLOCKED;
 
-                log_task(log_file, i, task_queue[i], 0);
+                log_task(log_file, i, task_queue[i]);
             }
         }
     }
-    fprintf(log_file,"]\n}");
+
+    fseek(log_file, -2, SEEK_CUR); // Overwrite the trailing comma
+    fprintf(log_file,"\n]\n}");
     fclose(log_file);
     printf("All tasks completed\n");
 }
