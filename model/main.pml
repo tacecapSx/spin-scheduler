@@ -11,6 +11,7 @@
 typedef Task {
   int id;
   byte state;
+  bool entered_running;
   int hash;
   int hash_start;
   int hash_end;
@@ -97,7 +98,12 @@ proctype task_runner() {
   
     d_step {
       execution_time++;
+
+      // Set the entered running signal for verification
+      task_data[task_index].entered_running = true;
       task_data[task_index].state = RUNNING;
+      task_data[task_index].entered_running = false;
+
       task_data[task_index].hash_progress++;
     }
     
@@ -144,6 +150,12 @@ init {
   mutex_lock(load_mutex);
 
   run_scheduler();
+}
+
+ltl task_count_will_become_zero_and_be_bounded {
+  [] (heap.size <= MAX_TASKS)
+    &&
+  [] <> (heap.size == 0)
 }
 
 #include "ltl_statements.pml"

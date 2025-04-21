@@ -1,25 +1,35 @@
-# Name of the executable
-TARGET = main
+# Target name
+TARGET = scheduler/main
 
-# Compiler to use
+# Compiler and flags
 CC = gcc
-
-# Compiler flags (optional)
 CFLAGS = -Wall -O3
-
-# Source file
-SRC = main.c
-
-# Libraries to link
 LIBS = -pthread
 
-# Custom source files
-CSRC = heap.c
+# Directories
+SRC_DIR = scheduler
+TOOLS_DIR = tools
 
-# Rule to build the executable
-$(TARGET): $(SRC)
+# Source files
+SRC = $(SRC_DIR)/main.c
+CSRC = $(SRC_DIR)/heap.c
+OBJS = $(SRC:.c=.o) $(CSRC:.c=.o)
+
+# Build target
+$(TARGET): $(SRC) $(CSRC)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRC) $(CSRC) $(LIBS)
 
-# Rule to clean up generated files
+
+
+# Setup rule (calls Python + builds + runs)
+setup: generate $(TARGET)
+	./$(TARGET)
+	python3 $(TOOLS_DIR)/make_spin_trail.py
+
+# Python input generator
+generate:
+	python3 $(TOOLS_DIR)/generate_inputs.py
+
+# Clean up
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) $(SRC_DIR)/*.o

@@ -15,7 +15,7 @@ if [[ ! -f "$filename" ]]; then
   exit 1
 fi
 
-ltl_statements_file="ltl_statements.pml"
+ltl_statements_file="model/ltl_statements.pml"
 
 # Check if the LTL statements file exists
 if [[ ! -f "$ltl_statements_file" ]]; then

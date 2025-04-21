@@ -10,6 +10,7 @@
 typedef Task {
   int id;
   byte state;
+  bool entered_running;
   int hash;
   int hash_start;
   int hash_end;
@@ -31,8 +32,20 @@ inline run_scheduler() {
     
     trail?id, state, hash, hash_start, hash_end, hash_progress, p;
 
-    d_step {
+    atomic {
+      // Increment execution time
+      if
+      :: state == RUNNING ->
+        execution_time++;
+      :: else -> skip;
+      fi;
+
+      task_data[id].p = p;
+      
+      // Set the entered running signal for verification
+      task_data[id].entered_running = (state == RUNNING);
       task_data[id].state = state;
+      task_data[id].entered_running = false;
 
       if
       :: state == TERMINATED -> 
@@ -41,37 +54,27 @@ inline run_scheduler() {
       fi;
     }
   :: empty(trail) && trail_index < TRAIL_COUNT  ->
-    execution_time++;
-    
     trail_feeder();
   :: empty(trail) && trail_index >= TRAIL_COUNT -> break;
   od;
 }
 
 inline trail_feeder() {
-  int i = 0;
+  d_step {
+    c_code {
+      now.id = trail_data[now.trail_index].id;
+      now.state = trail_data[now.trail_index].state;
+      now.hash = trail_data[now.trail_index].hash;
+      now.hash_start = trail_data[now.trail_index].hash_start;
+      now.hash_end = trail_data[now.trail_index].hash_end;
+      now.hash_progress = trail_data[now.trail_index].hash_progress;
+      now.p = trail_data[now.trail_index].p;
+    }
 
-  do
-  :: i < 2 -> // Load in two task-states (which corresponds to 1 unit of execution time)
-      d_step {
-        c_code {
-          now.id = trail_data[now.trail_index].id;
-          now.state = trail_data[now.trail_index].state;
-          now.hash = trail_data[now.trail_index].hash;
-          now.hash_start = trail_data[now.trail_index].hash_start;
-          now.hash_end = trail_data[now.trail_index].hash_end;
-          now.hash_progress = trail_data[now.trail_index].hash_progress;
-          now.p = trail_data[now.trail_index].p;
-        }
-
-        trail_index++;
-        
-        trail!id, state, hash, hash_start, hash_end, hash_progress, p;
-
-        i++;
-      }
-  :: else -> break;
-  od;
+    trail_index++;
+    
+    trail!id, state, hash, hash_start, hash_end, hash_progress, p;
+  }
 }
 
 init {
@@ -82,6 +85,12 @@ init {
   go_signal?signal;
 
   run_scheduler();
+}
+
+ltl task_count_will_become_zero_and_be_bounded {
+  [] (task_count <= MAX_TASKS)
+    &&
+  [] <> (task_count == 0)
 }
 
 #include "ltl_statements.pml"
