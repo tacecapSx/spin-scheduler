@@ -2,13 +2,13 @@ import json
 
 MAX_TASKS = 4
 
-with open("c_trace.json", "r") as f:
+with open("scheduler/scheduler_trace.json", "r") as f:
     trace = json.load(f)["events"]
 
 event_count = len(trace)
 
 # Write SPIN trail
-with open("spin_input_trail.pml", "w") as f:
+with open("model/spin_input_trail.pml", "w") as f:
     f.write(f"#define MAX_TASKS {MAX_TASKS}\n")
     f.write(f"#define TRAIL_COUNT {event_count}\n\n")
 

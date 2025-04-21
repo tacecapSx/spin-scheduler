@@ -61,12 +61,12 @@ def main():
         tasks.append(task)
 
     # Generate C inputs
-    with open("c_random_inputs.txt", "w") as f:
+    with open("scheduler/scheduler_random_inputs.txt", "w") as f:
         for t in tasks:
             f.write(f"{t['id']} {t['hash']} {t['hash_start']} {t['hash_end']} {t['priority']}\n")
 
     # Generate SPIN inputs
-    with open("spin_random_inputs.pml", "w") as f:
+    with open("model/spin_random_inputs.pml", "w") as f:
         f.write(f"#define MAX_TASKS {MAX_TASKS}\n\n")
         f.write("int task_ids[MAX_TASKS] = {{ {} }};\n".format(
             ", ".join(str(t["id"]) for t in tasks)
@@ -85,7 +85,7 @@ def main():
         ))
 
     # Generate LTL statements
-    with open("ltl_statements.pml", "w") as f:
+    with open("model/ltl_statements.pml", "w") as f:
         # Headers
         f.write(f"#define MAX_EXECUTION_TIME {execution_time}\n\n")
 

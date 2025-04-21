@@ -67,7 +67,7 @@ void add_task(int id, int hash, int hash_start, int hash_end, uint8_t priority) 
 }
 
 void run_scheduler() {
-    FILE* log_file = fopen("c_trace.json", "w");
+    FILE* log_file = fopen("scheduler/scheduler_trace.json", "w");
     fprintf(log_file,"{\n\"events\": [\n");
     
     while (task_count > 0) {
@@ -108,7 +108,7 @@ void run_scheduler() {
 
 int main(int argc, char *argv[]) {
     // Load random inputs
-    FILE *file = fopen("c_random_inputs.txt", "r");
+    FILE *file = fopen("scheduler/scheduler_random_inputs.txt", "r");
     for(int i = 0; i < MAX_TASKS; i++) {
         int id, hash, hash_start, hash_end;
         uint8_t priority;
