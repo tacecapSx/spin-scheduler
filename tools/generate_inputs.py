@@ -125,57 +125,6 @@ def main():
             f.write(f"        ({' && '.join([f'task_queue[{j}].state != RUNNING' for j in other_ids])})")
             f.write(f" U (task_queue[{next_id}].state == RUNNING)\n      )\n    )\n  )\n")
             f.write("  &&\n" if i != MAX_TASKS - 1 else "}\n")
-            
-            '''f.write(f"  [] ( (task_queue[{i}].state == RUNNING) -> \n")
-            f.write(f"    (({' && '.join([f'(task_queue[{j}].state != RUNNING)' for j in other_ids])}) U (task_queue[{(i+1) % MAX_TASKS}].state == RUNNING)) )\n")
-            f.write("  &&\n" if i != MAX_TASKS - 1 else "}\n")'''
-            
-            '''f.write(f"  []( (task_queue[{i}].state == RUNNING) -> (\n")
-            
-            conditions = []
-
-            for offset in range(1, MAX_TASKS+1):
-                j = (i + offset) % MAX_TASKS
-
-                # Get all tasks between i and j that must be TERMINATED
-                terminated_indices = [(i + k) % MAX_TASKS for k in range(1, offset)]
-
-                # Build the condition to ensure intermediate tasks are TERMINATED
-                termination_check = " && ".join(
-                    f"(task_queue[{idx}].state == TERMINATED)" for idx in terminated_indices
-                )
-
-                # Build the forbidden clause: all other tasks (excluding i, j, and terminated) must not be RUNNING
-                forbidden_clause = " && ".join(
-                    f"(task_queue[{k}].state != RUNNING)"
-                    for k in range(MAX_TASKS)
-                    if k not in {i, j, *terminated_indices}
-                )
-                    
-                # Add the condition
-                if offset == MAX_TASKS: # Last condition
-                    condition = f"( {termination_check} )"
-                elif not termination_check: # No termination check yet
-                    condition = f"( ( {forbidden_clause} ) U (task_queue[{j}].state == RUNNING) )"
-                elif forbidden_clause: # Forbidden other tasks exist
-                    condition = f"( ({termination_check}) -> ( {forbidden_clause} ) U (task_queue[{j}].state == RUNNING) )"
-                else:
-                    condition = f"( ({termination_check}) -> <> (task_queue[{j}].state == RUNNING) )"
-                conditions.append(condition)
-            
-            # Add "all others are terminated" condition
-            # = ' && '.join([])
-            #conditions.append(f"( {others_terminated_clause} )")
-
-            # Join all conditions with ||
-            f.write("    " + "\n    ||\n    ".join(conditions) + "\n")
-            f.write("  ))")
-
-            # Full formula
-            f.write(" &&\n" if i < MAX_TASKS - 1 else "\n}\n")'''
-
-
-
 
     print("Generated random inputs:", tasks)
 
