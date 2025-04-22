@@ -23,8 +23,11 @@ if [[ ! -f "$ltl_statements_file" ]]; then
   exit 1
 fi
 
-# Extract LTL statement names from the ltl_statements.pml file
+# Extract LTL statement names from the ltl_statements.pml and called pml files
 ltl_names=$(grep -oP 'ltl \K\w+' "$filename" "$ltl_statements_file")
+
+# Clean up grep formatting for multiple files in the call
+ltl_names=$(for name in $ltl_names; do echo "${name##*:}"; done)
 
 # Check if there are any LTL statements
 if [[ -z "$ltl_names" ]]; then
