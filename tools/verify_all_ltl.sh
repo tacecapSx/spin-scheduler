@@ -24,7 +24,7 @@ if [[ ! -f "$ltl_statements_file" ]]; then
 fi
 
 # Extract LTL statement names from the ltl_statements.pml file
-ltl_names=$(grep -oP 'ltl \K\w+' "$ltl_statements_file")
+ltl_names=$(grep -oP 'ltl \K\w+' "$filename" "$ltl_statements_file")
 
 # Check if there are any LTL statements
 if [[ -z "$ltl_names" ]]; then
