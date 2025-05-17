@@ -11,6 +11,7 @@ typedef struct {
     int32_t hash_end;
     int32_t hash_progress;
     uint8_t p;
+    int32_t insertion_order;
 } Task;
 
 #endif // PACKETS_H

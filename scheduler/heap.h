@@ -8,6 +8,7 @@ typedef struct {
     Task *data;
     int size;
     int capacity;
+    int insertion_counter;
 } Heap;
 
 void heap_init(Heap *heap, int max_size);

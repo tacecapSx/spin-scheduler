@@ -15,7 +15,8 @@ typedef Task {
   int hash_start;
   int hash_end;
   int hash_progress;
-  byte p
+  byte p;
+  int insertion_order
 };
 
 Task task_data[MAX_TASKS];

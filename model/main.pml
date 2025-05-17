@@ -16,7 +16,8 @@ typedef Task {
   int hash_start;
   int hash_end;
   int hash_progress;
-  byte p
+  byte p;
+  int insertion_order
 };
 
 Task task_data[MAX_TASKS];
@@ -64,6 +65,7 @@ inline add_task(task_id, task_hash, task_hash_start, task_hash_end, task_p) {
     task_data[task_count].hash_start = task_hash_start;
     task_data[task_count].hash_end = task_hash_end;
     task_data[task_count].p = task_p;
+    task_data[task_count].insertion_order = -1;
   }
 
   // Insert into heap safely

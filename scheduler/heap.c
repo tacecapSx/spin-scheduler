@@ -39,6 +39,8 @@ void heap_insert(Heap *heap, Task task) {
         printf("ERROR: Attempted to insert into heap at max capacity.\n");
         exit(EXIT_FAILURE);
     }
+
+    task.insertion_order = heap->insertion_counter++;
     heap->data[heap->size] = task;
     bubble_up(heap, heap->size);
     heap->size++;
@@ -60,10 +62,14 @@ Task heap_get_max(Heap *heap) {
 void bubble_up(Heap *heap, int index) {
     while (index > 0) {
         int parent = (index - 1) / 2;
-        if (heap->data[index].p <= heap->data[parent].p) {
+        Task *cur = &heap->data[index];
+        Task *par = &heap->data[parent];
+
+        if (cur->p < par->p || (cur->p == par->p && cur->insertion_order > par->insertion_order)) {
             break;
         }
-        swap(&heap->data[index], &heap->data[parent]);
+
+        swap(cur, par);
         index = parent;
     }
 }
@@ -75,15 +81,26 @@ void bubble_down(Heap *heap, int index) {
         int right = 2 * index + 2;
         int largest = index;
 
-        if (left < heap->size && heap->data[left].p > heap->data[largest].p) {
-            largest = left;
+        if (left < heap->size) {
+            if (heap->data[left].p > heap->data[largest].p ||
+                (heap->data[left].p == heap->data[largest].p &&
+                 heap->data[left].insertion_order < heap->data[largest].insertion_order)) {
+                largest = left;
+            }
         }
-        if (right < heap->size && heap->data[right].p > heap->data[largest].p) {
-            largest = right;
+
+        if (right < heap->size) {
+            if (heap->data[right].p > heap->data[largest].p ||
+                (heap->data[right].p == heap->data[largest].p &&
+                 heap->data[right].insertion_order < heap->data[largest].insertion_order)) {
+                largest = right;
+            }
         }
+
         if (largest == index) {
             break;
         }
+
         swap(&heap->data[index], &heap->data[largest]);
         index = largest;
     }
