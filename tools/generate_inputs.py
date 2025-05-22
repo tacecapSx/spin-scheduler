@@ -6,7 +6,7 @@ SEED = 90024
 DIFFICULTY = 6
 EXECUTION_TIME_MAX = 12
 
-random.seed()
+random.seed(SEED)
 
 def int32_t(value):
     value &= 0xFFFFFFFF
