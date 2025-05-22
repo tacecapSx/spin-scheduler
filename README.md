@@ -59,15 +59,3 @@ Found in the `v0` branch, v0 is a baseline implementation executing tasks in a s
 
 ### v1
 Found in the `main` branch, v1 is the full implementation featuring a dynamic round-robin scheduling algorithm accounting for priorities. Tasks are executed concurrently by a thread pool. These properties are reflected in the Promela models as well, allowing for priority inversion and concurrency checks.
-
-v0 -> v1
-
-1. Single-threaded -> Multi-threaded
-
-2. Non-preemptive -> Preemptive
-
-3. Round-robin scheduling -> Priority-based scheduling
-
-4.	Cooperative task switching -> Message-passing model (interprocess communication)
-
-5.	Only if using priority: Verify liveness/deadlock -> Verify also starvation/load balancing
