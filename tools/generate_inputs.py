@@ -1,5 +1,4 @@
 import random
-import struct
 
 MAX_TASKS = 4
 SEED = 90024
