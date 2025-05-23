@@ -1,22 +1,28 @@
 import random
-import sys
+import argparse
 
 MAX_TASKS = 4
-DIFFICULTY = 100
 
-# Check for command-line seed input
-if len(sys.argv) > 1:
-    try:
-        SEED = int(sys.argv[1])
-        print(f"Generating seeded input for {SEED}.")
-    except ValueError:
-        print("Invalid seed input. Generating unseeded input.")
-        SEED = None
+# Set up the parser
+parser = argparse.ArgumentParser(description="Generate random scheduler inputs with seed, difficulty, and maximum execution time.")
+
+parser.add_argument("--seed", type=int, help="Seed for random number generator. If not provided, uses a random seed.")
+parser.add_argument("--difficulty", type=int, default=100, help="Difficulty level. Determines how long a task will maximally take to terminate. (default: 100)")
+
+args = parser.parse_args()
+
+# Set the seed
+if args.seed is not None:
+    SEED = args.seed
+    print(f"Generating seeded input for {SEED}.")
 else:
     SEED = None
     print("Generating unseeded input.")
 
 random.seed(SEED)
+
+# Get difficulty
+DIFFICULTY = args.difficulty
 
 def int32_t(value):
     value &= 0xFFFFFFFF
