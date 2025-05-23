@@ -1,12 +1,30 @@
 import random
-import struct
+import argparse
 
 MAX_TASKS = 4
-SEED = 90024
-DIFFICULTY = 6
-EXECUTION_TIME_MAX = 12
+
+# Set up the parser
+parser = argparse.ArgumentParser(description="Generate random scheduler inputs with seed, difficulty, and maximum execution time.")
+
+parser.add_argument("--seed", type=int, help="Seed for random number generator. If not provided, uses a random seed.")
+parser.add_argument("--difficulty", type=int, default=6, help="Difficulty level. Determines how long a task will maximally take to terminate. (default: 6)")
+parser.add_argument("--execution_time_max", type=int, default=12, help="Maximum execution time: An upper bound for all the tasks total execution time together. (default: 12)")
+
+args = parser.parse_args()
+
+# Set the seed
+if args.seed is not None:
+    SEED = args.seed
+    print(f"Generating seeded input for {SEED}.")
+else:
+    SEED = None
+    print("Generating unseeded input.")
 
 random.seed(SEED)
+
+# Get other args
+DIFFICULTY = args.difficulty
+EXECUTION_TIME_MAX = args.execution_time_max
 
 def int32_t(value):
     value &= 0xFFFFFFFF
@@ -147,7 +165,7 @@ def main():
             else:
                 f.write("  )\n}\n\n")
 
-        f.write("/*\n  This statement should hopefully *fail*, because we want SPIN to find a counter-example where multi-threading occurs.\n  The reason why we cannot create an \"eventually, multi-threading occurs\" (<>...) claim is that an execution sequence exists where a\n  single thread gets control every time. If this statement *fails*, we effectively prove existential quantification (∃) of multi-threading.\n*/\n")
+        f.write("/*\n  This statement should hopefully *fail*, because we want SPIN to find a counter-example where multi-threading occurs.\n  The reason why we cannot create an \"eventually, multi-threading occurs\" (<>...) claim is that an execution sequence exists where a\n  single thread gets control every time. If this statement *fails*, we effectively prove existential quantification (\"there exists a...\") of multi-threading.\n*/\n")
         f.write("ltl not_multi_threaded {\n  [] !(\n")
 
         conds = []
