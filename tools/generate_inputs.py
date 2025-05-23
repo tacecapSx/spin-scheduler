@@ -1,8 +1,20 @@
 import random
+import sys
 
 MAX_TASKS = 4
-SEED = 90024
 DIFFICULTY = 100
+
+# Check for command-line seed input
+if len(sys.argv) > 1:
+    try:
+        SEED = int(sys.argv[1])
+        print(f"Generating seeded input for {SEED}.")
+    except ValueError:
+        print("Invalid seed input. Generating unseeded input.")
+        SEED = None
+else:
+    SEED = None
+    print("Generating unseeded input.")
 
 random.seed(SEED)
 
