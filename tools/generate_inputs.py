@@ -167,17 +167,7 @@ def main():
 
         f.write("/*\n  This statement should hopefully *fail*, because we want SPIN to find a counter-example where multi-threading occurs.\n  The reason why we cannot create an \"eventually, multi-threading occurs\" (<>...) claim is that an execution sequence exists where a\n  single thread gets control every time. If this statement *fails*, we effectively prove existential quantification (\"there exists a...\") of multi-threading.\n*/\n")
         f.write("ltl should_fail_single_threaded {\n")
-        f.write(f"  [] (\n    ({' && '.join([f'task_data[{i}].state != RUNNING' for i in range(MAX_TASKS)])})\n")
-        f.write(f"    ||\n    (({' + '.join([f'(task_data[{i}].state == RUNNING)' for i in range(MAX_TASKS)])}) == 1)\n  )\n}}\n")
-        
-        '''f.write("ltl not_multi_threaded {\n  [] !(\n")
-
-        conds = []
-        for i in range(MAX_TASKS):
-            conds.append(f"    (task_data[{i}].state == RUNNING)")
-        
-        f.write(" +\n".join(conds))
-        f.write(" > 1\n  )\n}\n\n")'''
+        f.write(f"  [] (\n    ( {'\n    + '.join([f'(task_data[{i}].state == RUNNING)' for i in range(MAX_TASKS)])}) <= 1\n  )\n}}\n")
 
         f.write(generate_ltl_for_priority_scheduling())
     print("Generated random inputs:", tasks)
