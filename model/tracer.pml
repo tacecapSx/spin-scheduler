@@ -33,6 +33,13 @@ inline run_scheduler() {
     trail?queue_position, id, state, hash, hash_start, hash_end, hash_progress, p;
 
     d_step {
+      // Increment execution time
+      if
+      :: state == RUNNING ->
+        execution_time++;
+      :: else -> skip;
+      fi;
+
       task_data[id].state = state;
 
       task_queue[queue_position].id = id;
@@ -50,38 +57,28 @@ inline run_scheduler() {
       fi;
     }
   :: empty(trail) && trail_index < TRAIL_COUNT  ->
-    execution_time++;
-    
     trail_feeder();
   :: empty(trail) && trail_index >= TRAIL_COUNT -> break;
   od;
 }
 
 inline trail_feeder() {
-  int i = 0;
+  d_step {
+    c_code {
+      now.queue_position = trail_data[now.trail_index].queue_position;
+      now.id = trail_data[now.trail_index].id;
+      now.state = trail_data[now.trail_index].state;
+      now.hash = trail_data[now.trail_index].hash;
+      now.hash_start = trail_data[now.trail_index].hash_start;
+      now.hash_end = trail_data[now.trail_index].hash_end;
+      now.hash_progress = trail_data[now.trail_index].hash_progress;
+      now.p = trail_data[now.trail_index].p;
+    }
 
-  do
-  :: i < 2 -> // Load in two task-states (which corresponds to 1 unit of execution time)
-      d_step {
-        c_code {
-          now.queue_position = trail_data[now.trail_index].queue_position;
-          now.id = trail_data[now.trail_index].id;
-          now.state = trail_data[now.trail_index].state;
-          now.hash = trail_data[now.trail_index].hash;
-          now.hash_start = trail_data[now.trail_index].hash_start;
-          now.hash_end = trail_data[now.trail_index].hash_end;
-          now.hash_progress = trail_data[now.trail_index].hash_progress;
-          now.p = trail_data[now.trail_index].p;
-        }
-
-        trail_index++;
-        
-        trail!queue_position, id, state, hash, hash_start, hash_end, hash_progress, p;
-
-        i++;
-      }
-  :: else -> break;
-  od;
+    trail_index++;
+    
+    trail!queue_position, id, state, hash, hash_start, hash_end, hash_progress, p;
+  }
 }
 
 init {
