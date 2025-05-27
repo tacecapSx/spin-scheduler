@@ -1,5 +1,5 @@
-#ifndef PACKETS_H
-#define PACKETS_H
+#ifndef TYPES_H
+#define TYPES_H
 
 #include <stdint.h>
 
@@ -14,4 +14,4 @@ typedef struct {
     int32_t insertion_order;
 } Task;
 
-#endif // PACKETS_H
+#endif // TYPES_H
