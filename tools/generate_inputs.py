@@ -145,29 +145,22 @@ def main():
 
         # Statements
 
-        f.write("ltl bounded_and_exact_execution_time {\n  [] (execution_time <= MAX_EXECUTION_TIME + MAX_TASKS) // + MAX_TASKS because we log the completion as well \n  &&\n  [] <> (execution_time == MAX_EXECUTION_TIME + MAX_TASKS)\n}\n\n")
+        f.write("ltl bounded_and_exact_execution_time {\n")
+        f.write("  [] (execution_time <= MAX_EXECUTION_TIME + MAX_TASKS) // + MAX_TASKS because we log the completion as well")
+        f.write("\n  &&\n  [] <> (execution_time == MAX_EXECUTION_TIME + MAX_TASKS)\n}\n\n")
 
         f.write("ltl all_tasks_will_terminate {\n")
-        for i in range(MAX_TASKS):
-            f.write(f"  ([] <> (task_data[{i}].state == TERMINATED))\n")
+        conds = "\n    &&\n    ".join([f"(<> (task_data[{i}].state == TERMINATED))" for i in range(MAX_TASKS)])
+        f.write(f"  [] (\n    {conds}\n  )\n}}\n\n")
 
-            if i < MAX_TASKS - 1:
-                f.write("    &&\n")
-            else:
-                f.write("  }\n\n")
-
-        f.write("ltl terminated_is_final {\n  [](\n")
-        for i in range(MAX_TASKS):
-            f.write(f"    (task_data[{i}].state == TERMINATED -> [](task_data[{i}].state == TERMINATED))\n")
-
-            if i < MAX_TASKS - 1:
-                f.write("    &&\n")
-            else:
-                f.write("  )\n}\n\n")
+        f.write("ltl terminated_is_final {\n")
+        conds = "\n    &&\n    ".join([f"(task_data[{i}].state == TERMINATED -> [] (task_data[{i}].state == TERMINATED))" for i in range(MAX_TASKS)])
+        f.write(f"  [] (\n    {conds}\n  )\n}}\n\n")
 
         f.write("/*\n  This statement should hopefully *fail*, because we want SPIN to find a counter-example where multi-threading occurs.\n  The reason why we cannot create an \"eventually, multi-threading occurs\" (<>...) claim is that an execution sequence exists where a\n  single thread gets control every time. If this statement *fails*, we effectively prove existential quantification (\"there exists a...\") of multi-threading.\n*/\n")
         f.write("ltl should_fail_single_threaded {\n")
-        f.write(f"  [] (\n    ( {'\n    + '.join([f'(task_data[{i}].state == RUNNING)' for i in range(MAX_TASKS)])}) <= 1\n  )\n}}\n")
+        conds = "\n    + ".join([f"(task_data[{i}].state == RUNNING)" for i in range(MAX_TASKS)])
+        f.write(f"  [] (\n    ( {conds} ) <= 1\n  )\n}}\n")
 
         f.write(generate_ltl_for_priority_scheduling())
     print("Generated random inputs:", tasks)
