@@ -126,15 +126,16 @@ def main():
         f.write(f"  [] (\n    ( {conds} ) <= 1\n  )\n}}\n\n")
         
         f.write("ltl round_robin {\n")
+        f.write("  [] (\n")
         for i in range(MAX_TASKS):
             next_id = (i+1) % MAX_TASKS
             other_ids = [j for j in range(MAX_TASKS) if j not in [i, next_id]]
             
-            f.write(f"  [] (\n    (task_queue[{i}].state == RUNNING) -> (\n")
+            f.write(f"    (task_queue[{i}].state == RUNNING) -> (\n")
             f.write(f"      (!task_queue[{next_id}].state == TERMINATED) -> (\n")
             f.write(f"        ({' && '.join([f'task_queue[{j}].state != RUNNING' for j in other_ids])})")
-            f.write(f" U (task_queue[{next_id}].state == RUNNING)\n      )\n    )\n  )\n")
-            f.write("  &&\n" if i != MAX_TASKS - 1 else "}\n")
+            f.write(f" U (task_queue[{next_id}].state == RUNNING)\n      )\n    )\n")
+            f.write("    &&\n" if i != MAX_TASKS - 1 else "  )\n}\n")
 
     print("Generated random inputs:", tasks)
 
