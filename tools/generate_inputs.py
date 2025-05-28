@@ -107,29 +107,23 @@ def main():
         f.write(f"#define MAX_EXECUTION_TIME {execution_time}\n\n")
 
         # Statements
-        f.write("ltl bounded_and_exact_execution_time {\n  [] (execution_time <= MAX_EXECUTION_TIME + MAX_TASKS) // + MAX_TASKS because we log the completion as well \n  &&\n  [] <> (execution_time == MAX_EXECUTION_TIME + MAX_TASKS)\n}\n")
-        f.write("ltl task_count_will_become_zero_and_be_bounded {\n  [] (task_count <= MAX_TASKS)\n  &&\n  [] <> (task_count == 0)\n}\n")
+        f.write("ltl bounded_and_exact_execution_time {\n")
+        f.write("  [] (execution_time <= MAX_EXECUTION_TIME + MAX_TASKS) // + MAX_TASKS because we log the completion as well")
+        f.write("\n  &&\n  [] <> (execution_time == MAX_EXECUTION_TIME + MAX_TASKS)\n}\n\n")
+
+        f.write("ltl task_count_will_become_zero_and_be_bounded {\n  [] (task_count <= MAX_TASKS)\n  &&\n  [] <> (task_count == 0)\n}\n\n")
 
         f.write("ltl all_tasks_will_terminate {\n")
-        for i in range(MAX_TASKS):
-            f.write(f"  ([] <> (task_data[{i}].state == TERMINATED))\n")
+        conds = "\n    &&\n    ".join([f"(<> (task_data[{i}].state == TERMINATED))" for i in range(MAX_TASKS)])
+        f.write(f"  [] (\n    {conds}\n  )\n}}\n\n")
 
-            if i < MAX_TASKS - 1:
-                f.write("    &&\n")
-            else:
-                f.write("  }\n")
-
-        f.write("ltl terminated_is_final {\n  [](\n")
-        for i in range(MAX_TASKS):
-            f.write(f"    (task_data[{i}].state == TERMINATED -> [](task_data[{i}].state == TERMINATED))\n")
-
-            if i < MAX_TASKS - 1:
-                f.write("    &&\n")
-            else:
-                f.write("  )\n}\n")
+        f.write("ltl terminated_is_final {\n")
+        conds = "\n    &&\n    ".join([f"(task_data[{i}].state == TERMINATED -> [] (task_data[{i}].state == TERMINATED))" for i in range(MAX_TASKS)])
+        f.write(f"  [] (\n    {conds}\n  )\n}}\n\n")
 
         f.write("ltl single_threaded {\n")
-        f.write(f"  [] (\n    ( {'\n    + '.join([f'(task_data[{i}].state == RUNNING)' for i in range(MAX_TASKS)])}) <= 1\n  )\n}}\n")
+        conds = "\n    + ".join([f"(task_data[{i}].state == RUNNING)" for i in range(MAX_TASKS)])
+        f.write(f"  [] (\n    ( {conds} ) <= 1\n  )\n}}\n\n")
         
         f.write("ltl round_robin {\n")
         for i in range(MAX_TASKS):
