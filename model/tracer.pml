@@ -7,6 +7,8 @@
 #define BLOCKED 2
 #define TERMINATED 3
 
+#define THREAD_COUNT 2
+
 typedef Task {
   int id;
   byte state;
@@ -24,6 +26,11 @@ byte task_count = MAX_TASKS;
 
 int id, hash, hash_start, hash_end, hash_progress;
 byte state, p;
+
+chan heap_mutex = [1] of {bool};
+bool heap_locked = false;
+bool in_cs[THREAD_COUNT];
+bool waiting[THREAD_COUNT];
 
 int execution_time = 0;
 
@@ -79,6 +86,8 @@ inline trail_feeder() {
 }
 
 init {
+  heap_mutex!true; // Heap mutex needs to be initialized as unlocked for verification even though it is unused in tracer.
+
   // Load in tasks to queue
   run init_trace();
 

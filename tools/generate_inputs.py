@@ -2,6 +2,7 @@ import random
 import argparse
 
 MAX_TASKS = 4
+THREAD_COUNT = 2
 
 # Set up the parser
 parser = argparse.ArgumentParser(description="Generate random scheduler inputs with seed, difficulty, and maximum execution time.")
@@ -160,7 +161,15 @@ def main():
         f.write("/*\n  This statement should hopefully *fail*, because we want SPIN to find a counter-example where multi-threading occurs.\n  The reason why we cannot create an \"eventually, multi-threading occurs\" (<>...) claim is that an execution sequence exists where a\n  single thread gets control every time. If this statement *fails*, we effectively prove existential quantification (\"there exists a...\") of multi-threading.\n*/\n")
         f.write("ltl should_fail_single_threaded {\n")
         conds = "\n    + ".join([f"(task_data[{i}].state == RUNNING)" for i in range(MAX_TASKS)])
-        f.write(f"  [] (\n    ( {conds} ) <= 1\n  )\n}}\n")
+        f.write(f"  [] (\n    ( {conds} ) <= 1\n  )\n}}\n\n")
+
+        f.write("ltl thread_safety {\n")
+        conds = conds = " + ".join([f"in_cs[{i}]" for i in range(THREAD_COUNT)])
+        f.write(f"  [] (\n    (( {conds} ) == 0 && !heap_locked)\n    ||\n    (( {conds} ) == 1 && heap_locked)\n  )\n}}\n\n")
+
+        f.write("ltl thread_liveness {\n")
+        conds = conds = "\n    &&\n    ".join([f"(waiting[{i}] -> <> in_cs[{i}])" for i in range(THREAD_COUNT)])
+        f.write(f"  [] (\n    {conds}\n  )\n}}\n\n")
 
         f.write(generate_ltl_for_priority_scheduling())
     print("Generated random inputs:", tasks)

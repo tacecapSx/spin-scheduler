@@ -8,6 +8,8 @@
 #define BLOCKED 2
 #define TERMINATED 3
 
+#define THREAD_COUNT 2
+
 typedef Task {
   int id;
   byte state;
@@ -23,13 +25,33 @@ typedef Task {
 Task task_data[MAX_TASKS];
 byte task_count = 0;
 
-chan load_mutex = [1] of {bool};
-chan heap_mutex = [1] of {bool};
+chan heap_mutex = [1] of {bool}; // Mutex variable as a message channel
+bool heap_locked = false; // Boolean version of the chan for verification
+
+bool in_cs[THREAD_COUNT]; // Boolean for each thread signalling if it is in a critical section
+bool waiting[THREAD_COUNT]; // Boolean for each thread signalling if it is waiting to enter a critical section
 
 int execution_time = 0;
 
-inline mutex_lock(mutex) { mutex?_; }
-inline mutex_unlock(mutex) { mutex!true; }
+// Mutex lock/unlock functions utilizing the message channel. They also set verification-relevant flags using a thread's id.
+inline mutex_lock(id)   {
+  waiting[id] = true;
+  
+  d_step {
+    heap_mutex?_;
+    waiting[id] = false;
+    heap_locked = true;
+    in_cs[id] = true;
+  }
+}
+
+inline mutex_unlock(id) {
+  d_step {
+    heap_mutex!true;
+    heap_locked = false;
+    in_cs[id] = false;
+  }
+}
 
 inline murmurhash3_32(key, k) {
   d_step {
@@ -78,25 +100,25 @@ inline add_task(task_id, task_hash, task_hash_start, task_hash_end, task_p) {
   }
 }
 
-// Task-running "thread"
-proctype task_runner() {
+// Task-running "thread" with an id
+proctype task_runner(byte id) {
   int hash;
   byte task_index;
   
   do
   :: true ->
-    mutex_lock(heap_mutex);
+    mutex_lock(id);
         
     // If heap is empty, unlock and terminate
     if
     :: heap.size == 0 ->
-      mutex_unlock(heap_mutex);
+      mutex_unlock(id);
       break;
     :: else -> skip;
     fi;
 
     heap_get_max(task_index);
-    mutex_unlock(heap_mutex);
+    mutex_unlock(id);
   
     d_step {
       execution_time++;
@@ -119,17 +141,23 @@ proctype task_runner() {
       task_data[task_index].state = BLOCKED;
 
       // Reinsert task index safely
-      mutex_lock(heap_mutex);
+      mutex_lock(id);
       heap_insert(task_index);
-      mutex_unlock(heap_mutex);
+      mutex_unlock(id);
     fi;
   od;
 }
 
 inline run_scheduler() {
-  // Start 2 threads
-  run task_runner();
-  run task_runner();
+  // Start THREAD_COUNT
+  byte id = 0;
+
+  do
+  :: id < THREAD_COUNT ->
+    run task_runner(id); // Start a thread with its id
+    id++;
+  :: else -> break;
+  od;
 }
 
 init {
@@ -144,12 +172,9 @@ init {
     :: task < MAX_TASKS ->
         add_task(task_ids[task], task_hashes[task], task_hash_starts[task], task_hash_ends[task], task_priorities[task]);
         task++;
-    :: else -> mutex_unlock(load_mutex); break;
+    :: else -> break;
     od;
   }
-
-  // Wait for loading to be complete before running scheduler
-  mutex_lock(load_mutex);
 
   run_scheduler();
 }
