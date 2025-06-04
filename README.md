@@ -17,7 +17,7 @@ make setup
 This `make` flag will automatically generate random inputs, compile the C source code, execute it, and utilize the C scheduler's execution trace to make input for `tracer.pml`. Finally, to verify multiple LTL properties easily, the tool `verify_all_ltl.sh` is included and can be called on one of the models:
 
 ```
-./verify_all_ltl.sh model/main.pml
+./tools/verify_all_ltl.sh ./model/main.pml
 ```
 
 Of course, SPIN commands can be executed on the models at the user's leisure at this point (after inputs have been generated, and an execution trace has been created for `tracer.pml`).
